@@ -1,0 +1,14 @@
+{
+  "model_name_or_path": "rinna/japanese-roberta-base",
+  "train_file": "generated_data_ja/corpus.txt",
+  "do_train": true,
+  "do_eval": true,
+  "output_dir": "saved_model_ja/japanese-roberta-base",
+  "line_by_line": true,
+  "overwrite_output_dir": true, 
+  "save_steps": 321,
+  "num_train_epochs": 10,
+  "max_seq_length": 256,
+  "per_device_eval_batch_size": 32,
+  "per_device_train_batch_size": 32
+}

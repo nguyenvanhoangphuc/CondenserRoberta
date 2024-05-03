@@ -1,0 +1,10 @@
+transformers
+tqdm
+numpy
+pandas
+sentence-transformers
+underthesea
+rank_bm25
+pandas
+datasets
+huggingface-hub
