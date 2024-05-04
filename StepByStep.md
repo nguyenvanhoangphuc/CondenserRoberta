@@ -1,3 +1,11 @@
+## Lưu ý: 
+- Nếu gặp lỗi sau:
+UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 142: character maps to <undefined>
+Thì bổ sung ', encoding="utf-8"' trong câu lệnh open file
+- Cài đặt MeCab xử lý tokenizer cho tiếng Nhật: 
+pip install mecab-python3
+pip install unidic-lite
+
 ## Các bước thực hiện: 
 
 #### 1. Chạy lệnh tạo corpus: 
@@ -32,8 +40,7 @@ conclusion:
 
 #### 3. bm25_create_pairs.py
 
-python bm25_create_pairs.py --model_path /saved_model/bm25_Plus_04_06_model_full_manual_stopword \
-    --data_path /zac2021-ltr-data --save_pair_path /pair_data
+python bm25_create_pairs.py --model_path saved_model/bm25_Plus_04_06_model_full_manual_stopword --data_path zac2021-ltr-data --save_pair_path pair_data
 
 python bm25_create_pairs_ja.py --model_path saved_model_ja/bm25_Plus_04_06_model_full_manual_stopword --data_path zac2021-ltr-data-ja --save_pair_path pair_data_ja
 
@@ -81,7 +88,7 @@ CUDA_VISIBLE_DEVICES=0
 python train_sentence_bert_ja.py --pretrained_model /kaggle/working/phobert-base --max_seq_length 256 --pair_data_path /kaggle/working/pair_data/bm_25_pairs_top20 --round 1 --num_val 1000 --epochs 10 --saved_model /kaggle/working/saved_model --batch_size 32
 
 tiếng việt
-python train_sentence_bert.py --pretrained_model saved_model/phobert-base --max_seq_length 256 --pair_data_path pair_data/bm_25_pairs_top20 --round 1 --num_val 1000 --epochs 5 --saved_model saved_model --batch_size 32
+python train_sentence_bert.py --pretrained_model saved_model/phobert-base --max_seq_length 256 --pair_data_path pair_data/bm_25_pairs_top20 --round 1 --num_val 1000 --epochs 5 --saved_model saved_model_round1 --batch_size 32
 
 tiếng nhật
 python train_sentence_bert_ja.py --pretrained_model saved_model_ja/japanese-roberta-base --max_seq_length 256 --pair_data_path pair_data_ja/bm_25_pairs_top20 --round 1 --num_val 5 --epochs 10 --saved_model saved_model_round1_ja --batch_size 32
@@ -100,7 +107,11 @@ python hard_negative_mining.py \
     --save_path /path/to/directory/to/save/neg/pairs\
     --top_k top_k_negative_pair
 
-python hard_negative_mining_ja.py --model_path saved_model/bm25_Plus_04_06_model_full_manual_stopword --sentence_bert_path saved_model_round1_ja --data_path zac2021-ltr-data-ja --save_path pair_data_ja --top_k 20
+tiếng việt
+python hard_negative_mining.py --model_path saved_model/bm25_Plus_04_06_model_full_manual_stopword --sentence_bert_path saved_model_round1 --data_path zac2021-ltr-data --save_path pair_data --top_k 20
+
+tiếng nhật
+python hard_negative_mining_ja.py --model_path saved_model_ja/bm25_Plus_04_06_model_full_manual_stopword --sentence_bert_path saved_model_round1_ja --data_path zac2021-ltr-data-ja --save_path pair_data_ja --top_k 20
 
 conclusion: 
 - Tạo negative mức 2 bằng cách lấy top 20 câu mà model 1 dự đoán sai để thực hiện đưa vào huấn luyện ContrastiveLoss tiếp.
@@ -118,6 +129,9 @@ python train_sentence_bert.py
     --epochs 5\
     --saved_model /path/to/your/save/model/directory\
     --batch_size 32\
+
+Tiếng việt: 
+python train_sentence_bert.py --pretrained_model saved_model/japanese-roberta-base --max_seq_length 256 --pair_data_path pair_data/save_pairs_vibert_top20.pkl --round 2 --num_val 5 --epochs 5 --saved_model saved_model_round2 --batch_size 32
 
 Tiếng nhật: 
 python train_sentence_bert_ja.py --pretrained_model saved_model_ja/japanese-roberta-base --max_seq_length 256 --pair_data_path pair_data_ja/save_pairs_vibert_top20.pkl --round 2 --num_val 5 --epochs 5 --saved_model saved_model_round2_ja --batch_size 32
