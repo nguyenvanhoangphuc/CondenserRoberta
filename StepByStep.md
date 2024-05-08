@@ -94,7 +94,7 @@ CUDA_VISIBLE_DEVICES=0
 python train_sentence_bert_ja.py --pretrained_model /kaggle/working/phobert-base --max_seq_length 256 --pair_data_path /kaggle/working/pair_data/bm_25_pairs_top20 --round 1 --num_val 1000 --epochs 10 --saved_model /kaggle/working/saved_model --batch_size 32
 
 tiếng việt
-python train_sentence_bert.py --pretrained_model saved_model/phobert-base --max_seq_length 256 --pair_data_path pair_data/bm_25_pairs_top20 --round 1 --num_val 1000 --epochs 5 --saved_model saved_model --batch_size 32
+python train_sentence_bert.py --pretrained_model saved_model/phobert-base --max_seq_length 256 --pair_data_path pair_data/bm_25_pairs_top20 --round 1 --num_val 1000 --epochs 5 --saved_model saved_model_round1 --batch_size 32
 
 tiếng nhật
 python train_sentence_bert_ja.py --pretrained_model saved_model_ja/japanese-roberta-base --max_seq_length 256 --pair_data_path pair_data_ja/bm_25_pairs_top20 --round 1 --num_val 5 --epochs 10 --saved_model saved_model_round1_ja --batch_size 32
