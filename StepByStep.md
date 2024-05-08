@@ -1,3 +1,11 @@
+## Lưu ý: 
+- Nếu gặp lỗi sau:
+UnicodeDecodeError: 'charmap' codec can't decode byte 0x90 in position 142: character maps to <undefined>
+Thì bổ sung ', encoding="utf-8"' trong câu lệnh open file
+- Cài đặt MeCab xử lý tokenizer cho tiếng Nhật: 
+pip install mecab-python3
+pip install unidic-lite
+
 ## Các bước thực hiện: 
 
 #### 1. Chạy lệnh tạo corpus: 
@@ -32,8 +40,7 @@ conclusion:
 
 #### 3. bm25_create_pairs.py
 
-python bm25_create_pairs.py --model_path /saved_model/bm25_Plus_04_06_model_full_manual_stopword \
-    --data_path /zac2021-ltr-data --save_pair_path /pair_data
+python bm25_create_pairs.py --model_path saved_model/bm25_Plus_04_06_model_full_manual_stopword --data_path zac2021-ltr-data --save_pair_path pair_data
 
 python bm25_create_pairs_ja.py --model_path saved_model_ja/bm25_Plus_04_06_model_full_manual_stopword --data_path zac2021-ltr-data-ja --save_pair_path pair_data_ja
 
@@ -60,20 +67,26 @@ export MODEL_NAME=vinai/phobert-base; DATA_FILE=/kaggle/working/generated_data/c
 Hiện tại mình tập trung vào tạo tập dữ liệu theo hướng negative (như ở bước 3) nên bước này chưa cần tập trung.
 Như bên Hoàng và Quyền thì mình có model này sẵn (vd BERTJapanese) và coi như nó đã huấn luyện trên dữ liệu luật.
 
-python run_mlm.py 
-    --model_name_or_path vinai/phobert-base 
-    --train_file generated_data/corpus.txt 
-    --do_train --do_eval 
-    --output_dir saved_model/phobert-base 
-    --line_by_line --overwrite_output_dir 
-    --save_steps 2000 --num_train_epochs 20 
-    --max_seq_length 1024
-    --per_device_eval_batch_size 32 
-    --per_device_train_batch_size 32
+python run_mlm.py --model_name_or_path vinai/phobert-base --train_file generated_data/corpus.txt --do_train --do_eval --output_dir saved_model/phobert-base --line_by_line --overwrite_output_dir --save_steps 2000 --num_train_epochs 20 --max_seq_length 1024 --per_device_eval_batch_size 32 --per_device_train_batch_size 32
 
 python run_mlm.py arguments.json
 python3 -c "import torch; print(torch.cuda.is_available())"
 CUDA_VISIBLE_DEVICES=0 python run_mlm.py arguments_ja.json
+
+
+#### 4.1 Condenser
+
+Tiếng Việt:
+Create train 
+Nó trả về một file duy nhất là condenser_data/corpus.json chứa danh sách các token tương ứng với từng dòng trong generated_data/corpus.txt
+
+export MODEL_NAME=vinai/phobert-base; MAX_LENGTH=256; DATA_FILE=generated_data/corpus.txt; SAVE_CONDENSER=condenser_data python Condenser/helper/create_train.py --tokenizer_name "$MODEL_NAME" --file "$DATA_FILE" --save_to "$SAVE_CONDENSER" --max_len "$MAX_LENGTH"
+
+python Condenser/helper/create_train.py --tokenizer_name vinai/phobert-base --file generated_data/corpus.txt --save_to condenser_data --max_len 256
+
+Train condenser: 
+python Condenser/run_pre_training.py --output_dir condenser_model/phobert-base --model_name_or_path vinai/phobert-base --do_train --save_steps 2000 --per_device_train_batch_size 32 --gradient_accumulation_steps 4 --fp16 --warmup_ratio 0.1 --learning_rate 5e-5 --num_train_epochs 8 --overwrite_output_dir --dataloader_num_workers 32 --n_head_layers 2 --skip_from 6 --max_seq_length 256 --train_dir condenser_data --weight_decay 0.01 --late_mlm
+
 
 #### 5. Train condenser and cocondenser from language model checkpoint
 
@@ -100,7 +113,11 @@ python hard_negative_mining.py \
     --save_path /path/to/directory/to/save/neg/pairs\
     --top_k top_k_negative_pair
 
-python hard_negative_mining_ja.py --model_path saved_model/bm25_Plus_04_06_model_full_manual_stopword --sentence_bert_path saved_model_round1_ja --data_path zac2021-ltr-data-ja --save_path pair_data_ja --top_k 20
+tiếng việt
+python hard_negative_mining.py --model_path saved_model/bm25_Plus_04_06_model_full_manual_stopword --sentence_bert_path saved_model_round1 --data_path zac2021-ltr-data --save_path pair_data --top_k 20
+
+tiếng nhật
+python hard_negative_mining_ja.py --model_path saved_model_ja/bm25_Plus_04_06_model_full_manual_stopword --sentence_bert_path saved_model_round1_ja --data_path zac2021-ltr-data-ja --save_path pair_data_ja --top_k 20
 
 conclusion: 
 - Tạo negative mức 2 bằng cách lấy top 20 câu mà model 1 dự đoán sai để thực hiện đưa vào huấn luyện ContrastiveLoss tiếp.
@@ -118,6 +135,9 @@ python train_sentence_bert.py
     --epochs 5\
     --saved_model /path/to/your/save/model/directory\
     --batch_size 32\
+
+Tiếng việt: 
+python train_sentence_bert.py --pretrained_model saved_model/japanese-roberta-base --max_seq_length 256 --pair_data_path pair_data/save_pairs_vibert_top20.pkl --round 2 --num_val 5 --epochs 5 --saved_model saved_model_round2 --batch_size 32
 
 Tiếng nhật: 
 python train_sentence_bert_ja.py --pretrained_model saved_model_ja/japanese-roberta-base --max_seq_length 256 --pair_data_path pair_data_ja/save_pairs_vibert_top20.pkl --round 2 --num_val 5 --epochs 5 --saved_model saved_model_round2_ja --batch_size 32
